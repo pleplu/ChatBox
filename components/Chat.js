@@ -62,7 +62,6 @@ const Chat = ({ db, route, navigation }) => {
           backgroundColor: '#f9f9f9',
           alignContent: "center",
           justifyContent: "center",
-          paddingTop: 6,
           borderTopColor: "transparent",
         }}
       />
