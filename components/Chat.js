@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Bubble, InputToolbar, GiftedChat } from "react-native-gifted-chat";
-import { StyleSheet, View, Text, TouchableOpacity, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { collection, addDoc, onSnapshot, query, where, orderBy } from "firebase/firestore";
 
-const Chat = ({ route, navigation }) => {
+const Chat = ({ db, route, navigation }) => {
 
-  const { name } = route.params;
+  const { name, userID } = route.params;
 
   const [color, setColor] = useState('#f9f9f9');
 
@@ -15,8 +16,25 @@ const Chat = ({ route, navigation }) => {
   const [messages, setMessages] = useState([]);
 
   const onSend = (newMessages) => {
-    setMessages(previousMessages => GiftedChat.append(previousMessages, newMessages))
+    addDoc(collection(db, "messages"), newMessages[0]), setMessages(previousMessages => GiftedChat.append(previousMessages, newMessages))
   }
+
+  useEffect(() => {
+    navigation.setOptions({title: name});
+
+    const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
+    const unsubMessages = onSnapshot(q, (documentsSnapshot) => {
+      let newMessages = [];
+      documentsSnapshot.forEach(doc => {
+        newMessages.push({id: doc.id, ...doc.data(), createdAt: new Date(doc.data().createdAt.toMillis())})
+      });
+      setMessages(newMessages);
+    });
+
+    return () => {
+      if (unsubMessages) unsubMessages();
+    }
+  }, []);
 
   // UI options for message containers
   const renderBubble = (props) => {
@@ -53,43 +71,6 @@ const Chat = ({ route, navigation }) => {
     );
   };
 
-  useEffect(() => {
-    setMessages([
-      {
-        _id: 2,
-        text: "You are using ChatBox 1.0.0",
-        createdAt: new Date(),
-        user: {
-          _id: 2,
-          name: "React Native",
-          avatar: require('../assets/react-img.png'),
-        },
-      },
-
-      {
-        _id: 1,
-        text: "Hello, user",
-        createdAt: new Date(),
-        user: {
-          _id: 2,
-          name: "React Native",
-          avatar: require('../assets/react-img.png'),
-        },
-      },
-
-      {
-        _id: 3,
-        text: name + ' has entered ChatBox-1',
-        createdAt: new Date(),
-        system: true,
-      },
-    ]);
-  }, []);
-
-  useEffect(() => {
-    navigation.setOptions({title: name});
-  }, []);
-
   return (
     <View style={[styles.container, {backgroundColor: color}]}>
       <View style={{height: 60, backgroundColor: '#f9f9f9'}}>
@@ -102,7 +83,7 @@ const Chat = ({ route, navigation }) => {
           accessibilityRole="button">
           <Text style={[styles.text, {fontSize: 26, fontWeight: '700',}]}>☰</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, {position: 'absolute', right: 60, left: 60, top: 10,}]}>ChatBox-1</Text>
+        <Text style={[styles.title, {position: 'absolute', right: 60, left: 60, top: 10,}]}>ChatBox</Text>
       </View>
 
       <View style={{flex: 1,}}>
@@ -111,9 +92,9 @@ const Chat = ({ route, navigation }) => {
         renderBubble={renderBubble}
         renderInputToolbar={(props) => MessengerBarContainer(props)}
         onSend={messages => onSend(messages)}
-        onSubmitEditing={messages => onSend(messages)}
         user={{
-          _id: 1
+          _id: userID,
+          name: name
         }}
         accessible={true}
         accessibilityLabel="Text input field"

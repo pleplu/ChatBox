@@ -1,11 +1,25 @@
 import { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, ImageBackground, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, View, Text, TextInput, ImageBackground, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 const Start = ({ navigation }) => {
 
   const image = require('../assets/tree-background.jpg');
 
   const [name, setName] = useState('');
+
+  const auth = getAuth();
+
+  const signInUser = () => {
+    signInAnonymously(auth)
+      .then(result => {
+        navigation.navigate("Chat", {userID: result.user.uid, name:name});
+        Alert.alert("Signed in successfully!");
+      })
+      .catch((error) => {
+        Alert.alert("Unable to sign in, try later again.");
+      })
+  }
 
   return (
     <View style={styles.container}>
@@ -16,7 +30,7 @@ const Start = ({ navigation }) => {
         value={name}
         onChangeText={setName}
         placeholder='Enter username...'
-        onSubmitEditing={() => navigation.navigate('Chat', {name: name})}
+        onSubmitEditing={signInUser}
         accessible={true}
         accessibilityLabel="Enter username"
         accessibilityHint="Enter username then press enter to proceed."
