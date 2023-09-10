@@ -44,12 +44,10 @@ const Chat = ({ db, route, navigation }) => {
         right: {
           backgroundColor: 'black',
           padding: 5,
-          marginBottom: 5,
         },
         left: {
           backgroundColor: '#f9f9f9',
           padding: 5,
-          marginBottom: 5,
         }
       }}
     />
