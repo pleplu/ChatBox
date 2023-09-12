@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Bubble, InputToolbar, GiftedChat } from "react-native-gifted-chat";
 import { StyleSheet, View, Text, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Alert } from 'react-native';
-import { collection, addDoc, onSnapshot, query, where, orderBy } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, orderBy } from "firebase/firestore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const Chat = ({ db, route, navigation }) => {
+const Chat = ({ db, route, navigation, isConnected }) => {
 
   const { name, userID } = route.params;
 
@@ -19,22 +20,45 @@ const Chat = ({ db, route, navigation }) => {
     addDoc(collection(db, "messages"), newMessages[0]), setMessages(previousMessages => GiftedChat.append(previousMessages, newMessages))
   }
 
+  let unsubMessages;
+
   useEffect(() => {
     navigation.setOptions({title: name});
 
-    const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
-    const unsubMessages = onSnapshot(q, (documentsSnapshot) => {
-      let newMessages = [];
-      documentsSnapshot.forEach(doc => {
-        newMessages.push({id: doc.id, ...doc.data(), createdAt: new Date(doc.data().createdAt.toMillis())})
+    if (isConnected === true) {
+
+      if (unsubMessages) unsubMessages();
+      unsubMessages = null;
+
+      const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
+      unsubMessages = onSnapshot(q, (documentsSnapshot) => {
+        let newMessages = [];
+        documentsSnapshot.forEach(doc => {
+          newMessages.push({id: doc.id, ...doc.data(), createdAt: new Date(doc.data().createdAt.toMillis())})
+        });
+
+        cacheMessages(newMessages);
+        setMessages(newMessages);
       });
-      setMessages(newMessages);
-    });
+    } else (loadCachedMessages)
 
     return () => {
       if (unsubMessages) unsubMessages();
     }
-  }, []);
+  }, [isConnected]);
+
+  const cacheMessages = async (messagesToCache) => {
+    try {
+      await AsyncStorage.setItem('messages', JSON.stringify(messagesToCache));
+    } catch (error) {
+      console.log(error.message);
+    }
+  }
+
+  const loadCachedMessages = async () => {
+    const cachedLists = await AsyncStorage.getItem('messages') || [];
+    setMessages(JSON.parse(cachedLists));
+  }
 
   // UI options for message containers
   const renderBubble = (props) => {
@@ -54,19 +78,24 @@ const Chat = ({ db, route, navigation }) => {
   }
 
   // UI options for text input
-  const MessengerBarContainer = (props) => {
-    return (
-      <InputToolbar
-        {...props}
-        containerStyle={{
-          backgroundColor: '#f9f9f9',
-          alignContent: "center",
-          justifyContent: "center",
-          borderTopColor: "transparent",
-        }}
-      />
-    );
-  };
+  // const MessengerBarContainer = (props) => {
+  //   return (
+  //     <InputToolbar
+  //       {...props}
+  //       containerStyle={{
+  //         backgroundColor: '#f9f9f9',
+  //         alignContent: "center",
+  //         justifyContent: "center",
+  //         borderTopColor: "transparent",
+  //       }}
+  //     />
+  //   );
+  // };
+
+  const renderInputToolbar = (props) => {
+    if (isConnected) return <InputToolbar {...props} />;
+    else return null;
+   }
 
   return (
     <View style={[styles.container, {backgroundColor: color}]}>
@@ -87,7 +116,8 @@ const Chat = ({ db, route, navigation }) => {
         <GiftedChat
         messages={messages}
         renderBubble={renderBubble}
-        renderInputToolbar={(props) => MessengerBarContainer(props)}
+        // renderInputToolbar={(props) => {MessengerBarContainer(props), renderInputToolbar}}
+        renderInputToolbar={renderInputToolbar}
         onSend={messages => onSend(messages)}
         user={{
           _id: userID,
