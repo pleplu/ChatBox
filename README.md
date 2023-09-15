@@ -4,29 +4,30 @@ Welcome to ChatBox!
 
 ChatBox is a fully fleshed out messaging app with image and location utilites as well as limited offline functionality. 
 
+
 The Dependencies for this project are as follows:
 
 @react-native-async-storage/async-storage: 1.18.2
 
-@react-native-community/netinfo": 9.3.10
+@react-native-community/netinfo: 9.3.10
 
-@react-navigation/native": ^6.1.7
+@react-navigation/native: ^6.1.7
 
-@react-navigation/native-stack": ^6.9.13
+@react-navigation/native-stack: ^6.9.13
 
-expo": ~49.0.8
+expo: ~49.0.8
 
-expo-image-picker": ~14.3.2
+expo-image-picker: ~14.3.2
 
-expo-location": ~16.1.0
+expo-location: ~16.1.0
 
-expo-media-library": ~15.4.1
+expo-media-library: ~15.4.1
 
-expo-status-bar": ~1.6.0
+expo-status-bar: ~1.6.0
 
-firebase": ^9.23.0
+firebase: ^9.23.0
 
-react": 18.2.0
+react: 18.2.0
 
 react-native: 0.72.4
 
@@ -37,6 +38,7 @@ react-native-maps: 1.7.1
 react-native-safe-area-context: 4.6.3
 
 react-native-screens: ~3.22.0
+
 
 You will also need to downgrade your current version of node to 16.19.0 if neccessary as well as creating your own database on Firebase.
 
