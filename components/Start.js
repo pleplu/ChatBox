@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, ImageBackground, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+
+// imports authorization utilities
 import { getAuth, signInAnonymously } from "firebase/auth";
 
 const Start = ({ navigation }) => {

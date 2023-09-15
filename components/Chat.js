@@ -1,10 +1,17 @@
+import CustomActions from './CustomActions';
+
 import { useEffect, useState } from 'react';
 import { Bubble, InputToolbar, GiftedChat } from "react-native-gifted-chat";
-import { StyleSheet, View, Text, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import MapView from 'react-native-maps';
+
+// imports firebase database utilites
 import { collection, addDoc, onSnapshot, query, orderBy } from "firebase/firestore";
+
+// imports cache utilites
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const Chat = ({ db, route, navigation, isConnected }) => {
+const Chat = ({ db, route, navigation, storage, isConnected }) => {
 
   const { name, userID } = route.params;
 
@@ -22,6 +29,7 @@ const Chat = ({ db, route, navigation, isConnected }) => {
 
   let unsubMessages;
 
+  // accesses messages from firestorm database and uploads new messages to database
   useEffect(() => {
     navigation.setOptions({title: name});
 
@@ -47,6 +55,7 @@ const Chat = ({ db, route, navigation, isConnected }) => {
     }
   }, [isConnected]);
 
+  // caches messages for offline accessability
   const cacheMessages = async (messagesToCache) => {
     try {
       await AsyncStorage.setItem('messages', JSON.stringify(messagesToCache));
@@ -55,6 +64,7 @@ const Chat = ({ db, route, navigation, isConnected }) => {
     }
   }
 
+  // accesses cached messages when user is offline
   const loadCachedMessages = async () => {
     const cachedLists = await AsyncStorage.getItem('messages') || [];
     setMessages(JSON.parse(cachedLists));
@@ -77,47 +87,71 @@ const Chat = ({ db, route, navigation, isConnected }) => {
     />
   }
 
-  // UI options for text input
-  // const MessengerBarContainer = (props) => {
-  //   return (
-  //     <InputToolbar
-  //       {...props}
-  //       containerStyle={{
-  //         backgroundColor: '#f9f9f9',
-  //         alignContent: "center",
-  //         justifyContent: "center",
-  //         borderTopColor: "transparent",
-  //       }}
-  //     />
-  //   );
-  // };
-
+  // UI options for input toolbar
   const renderInputToolbar = (props) => {
-    if (isConnected) return <InputToolbar {...props} />;
+    if (isConnected) return <InputToolbar 
+      {...props}
+      containerStyle={{
+        backgroundColor: '#f9f9f9',
+        alignContent: "center",
+        justifyContent: "center",
+        borderTopColor: "transparent",
+        height: 45,
+      }}
+    />;
     else return null;
    }
 
+  // renders cutom actions button
+  const renderCustomActions = (props) => {
+    return <CustomActions storage={storage} userID={userID} {...props} />;
+  };
+
+  // renders map view of users location
+  const renderCustomView = (props) => {
+    const { currentMessage} = props;
+    if (currentMessage.location) {
+      return (
+          <MapView
+            style={{width: 150,
+              height: 100,
+              borderRadius: 13,
+              margin: 3}}
+            region={{
+              latitude: currentMessage.location.latitude,
+              longitude: currentMessage.location.longitude,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            }}
+          />
+      );
+    }
+    return null;
+  }
+
   return (
     <View style={[styles.container, {backgroundColor: color}]}>
-      <View style={{height: 60, backgroundColor: '#f9f9f9'}}>
+
+      <View style={{height: 45, backgroundColor: '#f9f9f9'}}>
         <TouchableOpacity
-          style={{position: 'absolute', top: 10, left: 20}}
+          style={{position: 'absolute', top: 6, left: 20}}
           onPress={() => setModalVisible(true)}
           accessible={true}
           accessibilityLabel="Color options"
           accessibilityHint="Press icon to open background color selector."
           accessibilityRole="button">
-          <Text style={[styles.text, {fontSize: 26, fontWeight: '700',}]}>☰</Text>
+          <Text style={[styles.text, {fontSize: 22, fontWeight: '700',}]}>☰</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, {position: 'absolute', right: 60, left: 60, top: 10,}]}>ChatBox</Text>
+        <Text style={[styles.title, {position: 'absolute', right: 60, left: 60, top: 6, fontSize: 22,}]}>ChatBox</Text>
       </View>
 
       <View style={{flex: 1,}}>
         <GiftedChat
         messages={messages}
         renderBubble={renderBubble}
-        // renderInputToolbar={(props) => {MessengerBarContainer(props), renderInputToolbar}}
         renderInputToolbar={renderInputToolbar}
+        renderActions={renderCustomActions}
+        renderCustomView={renderCustomView}
         onSend={messages => onSend(messages)}
         user={{
           _id: userID,
@@ -137,7 +171,9 @@ const Chat = ({ db, route, navigation, isConnected }) => {
           setModalVisible(!modalVisible);
         }}>
         <View style={[styles.modalView, {backgroundColor: color, borderColor: textColor}]}>
+
           <Text style={[styles.text, {marginBottom: 20, color: textColor,}]}>Select a color</Text>
+
           <TouchableOpacity
             style={{position: 'absolute', top: 15, right: 15,}} 
             onPress={() => {setModalVisible(!modalVisible)}}
@@ -147,6 +183,7 @@ const Chat = ({ db, route, navigation, isConnected }) => {
             accessibilityRole="button">
             <Text style={styles.text}>❌</Text>
           </TouchableOpacity>
+
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
               onPress={() => {setColor('black'), setTextColor('white')}} 
